@@ -20,7 +20,6 @@ userRouter.get('/history', userController.getUserPacklists);
 
 // -----------------------------------------------------------------------------------------
 // | GET '/search' - Retrieve weather information and packlist items for the searched city.
-// | NOTE: This only works if a user is logged in.
 // |    - Specifically, the following will be returned for use:
 // |        + City
 // |        + Country

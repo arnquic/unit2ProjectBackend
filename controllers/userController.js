@@ -16,21 +16,47 @@ const days5 = 432000;
 
 // *** POST '/users' - Create user.
 userController.createUser = async function (req, res) {
-
+    try {
+        const user = await db.user.create({
+            username: req.body.username,
+            password: req.body.password
+        });
+        res.send({ message: "User created successfully.", userId: user.id });
+    }
+    catch (err) {
+        res.status(401);
+        res.send({ message: "Username already taken." });
+    }
 }
 
 // *** POST '/users/login' - Login an existing user.
 userController.loginUser = async function (req, res) {
-
+    try {
+        const existingUser = await db.user.findOne({
+            where: {
+                username: req.body.username
+            }
+        });
+        if (existingUser.password === req.body.password) {
+            res.send({ message: "Login successful.", userId: existingUser.id });
+        }
+        else {
+            res.status(401);
+            res.send({ message: "Invalid username/password combination." });
+        }
+    }
+    catch (err) {
+        res.status(401);
+        res.send({ message: "Invalid username/password combination." });
+    }
 }
 
 // *** GET '/users/history' - Retrieve a logged in user's saved packlists.
 userController.getUserPacklists = async function (req, res) {
-
+    req.headers.authorization
 }
 
 // *** GET '/users/search' - Retrieve weather information and packlist items for the searched city.
-//        NOTE: This only works if a user is logged in.
 //          Specifically, the following will be returned for use:
 //              + City
 //              + Country
@@ -98,7 +124,7 @@ userController.getWeatherPackitems = async function (req, res) {
         res.send({ message: "Error at packListReturn", error: err });
     }
     // Return the weather and packlist as one object.
-    res.json({ weatherReturn, packListReturn })
+    res.json({ weatherReturn, packListReturn });
 }
 
 // POST '/users/search/save' - Save a searched packlist.NOTE: This only works immediately after a search has been performed.
@@ -123,8 +149,10 @@ module.exports = userController;
 
 async function calculateAvg5DayTemp(longitude, latitude, callDate) {
     let daysAvgTemp = 0;
+    // Because the weather api's historical weather call returns one day's worth of hourly data, to get 5 days worth of data, the api must be called 5 times.
     for (let i = 0; i < 5; i++) {
         let hoursAvgTemp = 0;
+        // Call the weather api to get a day's worth of historic hourly data for the day "callDate," which is in UTC format.
         let historyWeatherResponse = await axios.get(`https://api.openweathermap.org/data/2.5/onecall/timemachine?lat=${latitude}&lon=${longitude}&dt=${callDate}&units=imperial&appid=89de7727b1752cbeafa3942937797633`);
         for (let i = 0; i < historyWeatherResponse.data.hourly.length; i++) {
             hoursAvgTemp += historyWeatherResponse.data.hourly[i].temp;
@@ -147,10 +175,10 @@ async function calculateAvg7DayTemp(longitude, latitude) {
 }
 
 function determineWeatherType(temp) {
-    if (temp < 32) {
+    if (temp < 35) {
         return "frigid";
     }
-    else if (temp >= 32 && temp < 65) {
+    else if (temp >= 35 && temp < 65) {
         return "cold";
     }
     else if (temp >= 65 && temp < 78) {
