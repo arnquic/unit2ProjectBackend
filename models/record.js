@@ -11,6 +11,9 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
+      models.record.belongsTo(models.user);
+      models.record.hasMany(models.weather);
+      models.record.belongsToMany(models.packItem, { through: "packList" });
     }
   };
   record.init({
