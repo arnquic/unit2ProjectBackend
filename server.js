@@ -1,6 +1,7 @@
 // Require statements.
 const express = require('express');
 const rowdy = require('rowdy-logger');
+const cors = require('cors');
 const userRouter = require('./routers/userRouter');
 
 // App initialization.
@@ -8,6 +9,7 @@ const app = express();
 const routesReport = rowdy.begin(app);
 
 app.use(express.json());
+app.use(cors());
 
 // Set port for the app to listen on.
 const PORT = process.env.port || 3001;

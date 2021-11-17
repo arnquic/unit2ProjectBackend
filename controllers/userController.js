@@ -2,6 +2,7 @@
 const axios = require('axios');
 const db = require('../models');
 const { Op } = require('sequelize');
+const record = require('../models/record');
 
 // Create the base controller object.
 const userController = {};
@@ -14,7 +15,9 @@ const days5 = 432000;
 // | Route functions. |
 // --------------------
 
+// ----------------------------------
 // *** POST '/users' - Create user.
+// ----------------------------------
 userController.createUser = async function (req, res) {
     try {
         const user = await db.user.create({
@@ -24,12 +27,14 @@ userController.createUser = async function (req, res) {
         res.send({ message: "User created successfully.", userId: user.id });
     }
     catch (err) {
-        res.status(401);
+        res.status(406);
         res.send({ message: "Username already taken." });
     }
 }
 
+// --------------------------------------------------
 // *** POST '/users/login' - Login an existing user.
+// --------------------------------------------------
 userController.loginUser = async function (req, res) {
     try {
         const existingUser = await db.user.findOne({
@@ -51,11 +56,47 @@ userController.loginUser = async function (req, res) {
     }
 }
 
+// -----------------------------------------------------------------------
 // *** GET '/users/history' - Retrieve a logged in user's saved packlists.
+// -----------------------------------------------------------------------
 userController.getUserPacklists = async function (req, res) {
-    req.headers.authorization
+    try {
+        let historyReturn = [];
+        const existingUser = await db.user.findByPk(req.headers.authorization);
+        const userRecords = await existingUser.getRecords();
+        for (let i = 0; i < userRecords.length; i++) {
+            // Find the weather related to the current user record.
+            const weatherReturn = await userRecords[i].getWeather();
+            console.log(weatherReturn);
+
+            // Find the packItems related to the current user record.
+            console.log(userRecords[i]);
+            try {
+                const packItems = await userRecords[i].getPackItems();
+            }
+            catch (err) {
+                res.status(400);
+                res.send({ message: "Error at packItem retrieval." });
+            }
+
+            // Loop through the different packItems and get just their dataValues.
+            let packListReturn = [];
+            for (let j = 0; j < packLists.length; j++) {
+                packListReturn.push(packItems[j].dataValues);
+            }
+            // Add the cityId, weather, and packItems into one object to be appended to the historyReturn array.
+            historyReturn.push({ cityId: userRecords[i].dataValues.cityId, weatherReturn, packListReturn })
+        }
+        console.log(userRecords);
+        res.send({ message: "getUserPacklists test." });
+    }
+    catch (err) {
+        res.status(400);
+        res.send({ message: "Unable to retrieve user's Packlist history." });
+    }
 }
 
+// --------------------------------------------------------------------------------------------------
 // *** GET '/users/search' - Retrieve weather information and packlist items for the searched city.
 //          Specifically, the following will be returned for use:
 //              + City
@@ -64,7 +105,9 @@ userController.getUserPacklists = async function (req, res) {
 //              + Today's (date search occured) weather category
 //              + Next 7 days' weather category
 //              + Packlist(list of items to pack)
+// -------------------------------------------------------------------------------------------------
 userController.getWeatherPackitems = async function (req, res) {
+    let cityId;
     let weatherReturn = {};
     let packListReturn = {};
 
@@ -78,6 +121,9 @@ userController.getWeatherPackitems = async function (req, res) {
         console.log('Error at todayWeatherResponse', err);
         res.send({ message: "Error at todayWeatherResponse", error: err });
     }
+
+    // Set the cityId.
+    cityId = todayWeatherResponse.data.id;
 
     // Set the weather type to be returned for today.
     weatherReturn.today = determineWeatherType(todayWeatherResponse.data.main.temp);
@@ -113,7 +159,7 @@ userController.getWeatherPackitems = async function (req, res) {
         res.send({ message: "Error at forecastTempAvg", error: err });
     }
     // Set the weather type to be returned for the future (upcoming 7 days) weather.
-    weatherReturn.future7days = determineWeatherType(forecastTempAvg);
+    weatherReturn.next7days = determineWeatherType(forecastTempAvg);
 
     // Set the packlist to be returned.
     try {
@@ -124,16 +170,45 @@ userController.getWeatherPackitems = async function (req, res) {
         res.send({ message: "Error at packListReturn", error: err });
     }
     // Return the weather and packlist as one object.
-    res.json({ weatherReturn, packListReturn });
+    res.json({ cityId: cityId, weatherReturn, packListReturn });
 }
 
-// POST '/users/search/save' - Save a searched packlist.NOTE: This only works immediately after a search has been performed.
+// --------------------------------------------------------------------
+// *** POST '/users/search/save' - Save a searched packlist.
+//          Requires: 
+//           - userId passed through headers as 'Authorization'
+//           - cityId object passed through the body
+//           - weatherReturn object passed through the body
+//           - packListReturn array of objects passed through the body
+// --------------------------------------------------------------------
 userController.saveWeatherPacklist = async function (req, res) {
-
+    try {
+        const loggedInUser = await db.user.findByPk(req.headers.authorization);
+        const newRecord = await loggedInUser.createRecord({
+            cityId: req.body.cityId
+        });
+        await newRecord.createWeather({
+            past5days: req.body.weatherReturn.past5days,
+            today: req.body.weatherReturn.today,
+            next7days: req.body.weatherReturn.future7days
+        });
+        for (let i = 0; i < req.body.packListReturn.length; i++) {
+            const packItemToAdd = await db.packItem.findByPk(req.body.packListReturn[i].id);
+            await newRecord.addPackItem(packItemToAdd);
+        }
+        res.send({ message: "Packlist saved successfully." });
+    }
+    catch (err) {
+        res.status(400);
+        res.send({ message: "Unable to save packlist." });
+    }
 }
 
-// DELETE '/users/history' - Delete a saved packlist.
+// ------------------------------------------------------
+// *** DELETE '/users/history' - Delete a saved packlist.
+// ------------------------------------------------------
 userController.deletePacklist = async function (req, res) {
+    const loggedInUser = await db.user.findByPk(req.header.authorization);
 
 }
 
@@ -154,8 +229,8 @@ async function calculateAvg5DayTemp(longitude, latitude, callDate) {
         let hoursAvgTemp = 0;
         // Call the weather api to get a day's worth of historic hourly data for the day "callDate," which is in UTC format.
         let historyWeatherResponse = await axios.get(`https://api.openweathermap.org/data/2.5/onecall/timemachine?lat=${latitude}&lon=${longitude}&dt=${callDate}&units=imperial&appid=89de7727b1752cbeafa3942937797633`);
-        for (let i = 0; i < historyWeatherResponse.data.hourly.length; i++) {
-            hoursAvgTemp += historyWeatherResponse.data.hourly[i].temp;
+        for (let j = 0; j < historyWeatherResponse.data.hourly.length; j++) {
+            hoursAvgTemp += historyWeatherResponse.data.hourly[j].temp;
         }
         daysAvgTemp += hoursAvgTemp / historyWeatherResponse.data.hourly.length;
         callDate += days1;
