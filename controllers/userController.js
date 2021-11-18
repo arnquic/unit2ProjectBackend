@@ -104,7 +104,7 @@ userController.getUserPacklists = async function (req, res) {
 }
 
 // --------------------------------------------------------------------------------------------------
-// *** GET '/users/search' - Retrieve weather information and packlist items for the searched city.
+// *** POST '/users/search' - Retrieve weather information and packlist items for the searched city.
 //          Specifically, the following will be returned for use:
 //              + City
 //              + Country
