@@ -15,6 +15,9 @@ userRouter.post('/', userController.createUser);
 // POST '/login' - Login an existing user.
 userRouter.post('/login', userController.loginUser);
 
+// *** GET '/userinfo' - Retrieve a logged in user's username.
+userRouter.get('/userinfo', userController.getUserName);
+
 // GET '/history' - Retrieve a logged in user's saved packlists.
 userRouter.get('/history', userController.getUserPacklists);
 

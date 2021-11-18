@@ -24,7 +24,7 @@ userController.createUser = async function (req, res) {
             username: req.body.username,
             password: req.body.password
         });
-        res.send({ message: "User created successfully.", userId: user.id });
+        res.send({ message: "User created successfully.", user });
     }
     catch (err) {
         res.status(406);
@@ -37,13 +37,13 @@ userController.createUser = async function (req, res) {
 // --------------------------------------------------
 userController.loginUser = async function (req, res) {
     try {
-        const existingUser = await db.user.findOne({
+        const user = await db.user.findOne({
             where: {
                 username: req.body.username
             }
         });
-        if (existingUser.password === req.body.password) {
-            res.send({ message: "Login successful.", userId: existingUser.id });
+        if (user.password === req.body.password) {
+            res.send({ message: "Login successful.", user });
         }
         else {
             res.status(401);
@@ -53,6 +53,20 @@ userController.loginUser = async function (req, res) {
     catch (err) {
         res.status(401);
         res.send({ message: "Invalid username/password combination." });
+    }
+}
+
+// -----------------------------------------------------------------
+// *** GET '/users/userinfo' - Retrieve a logged in user's username.
+// -----------------------------------------------------------------
+userController.getUserName = async function (req, res) {
+    try {
+        const user = await db.user.findByPk(req.headers.authorization);
+        res.send({ message: "User info retrieval successful.", user });
+    }
+    catch (err) {
+        res.status(401);
+        res.send({ message: "No user is logged in. User info retrieval failed." });
     }
 }
 
