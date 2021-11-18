@@ -31,7 +31,7 @@ userRouter.get('/history', userController.getUserPacklists);
 // |        + Next 7 days' weather category
 // |        + Packlist(list of items to pack)
 // -----------------------------------------------------------------------------------------
-userRouter.get('/search', userController.getWeatherPackitems);
+userRouter.post('/search', userController.getWeatherPackitems);
 
 // POST '/search/save' - Save a searched packlist.NOTE: This only works immediately after a search has been performed.
 userRouter.post('/search/save', userController.saveWeatherPacklist);
