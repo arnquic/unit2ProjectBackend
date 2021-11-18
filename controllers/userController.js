@@ -67,28 +67,21 @@ userController.getUserPacklists = async function (req, res) {
         for (let i = 0; i < userRecords.length; i++) {
             // Find the weather related to the current user record.
             const weatherReturn = await userRecords[i].getWeather();
-            console.log(weatherReturn);
 
             // Find the packItems related to the current user record.
-            console.log(userRecords[i]);
-            try {
-                const packItems = await userRecords[i].getPackItems();
-            }
-            catch (err) {
-                res.status(400);
-                res.send({ message: "Error at packItem retrieval." });
-            }
+            const packItems = await userRecords[i].getPackItems();
 
             // Loop through the different packItems and get just their dataValues.
             let packListReturn = [];
-            for (let j = 0; j < packLists.length; j++) {
-                packListReturn.push(packItems[j].dataValues);
+            for (let j = 0; j < packItems.length; j++) {
+                packItemToInclude = { id: packItems[j].dataValues.id, name: packItems[j].dataValues.name, type: packItems[j].dataValues.type, weatherUse: packItems[j].dataValues.weatherUse }
+                packListReturn.push(packItemToInclude);
             }
+
             // Add the cityId, weather, and packItems into one object to be appended to the historyReturn array.
-            historyReturn.push({ cityId: userRecords[i].dataValues.cityId, weatherReturn, packListReturn })
+            historyReturn.push({ recordId: userRecords[i].id, cityId: userRecords[i].dataValues.cityId, weatherReturn, packListReturn })
         }
-        console.log(userRecords);
-        res.send({ message: "getUserPacklists test." });
+        res.send(historyReturn);
     }
     catch (err) {
         res.status(400);
@@ -163,7 +156,7 @@ userController.getWeatherPackitems = async function (req, res) {
 
     // Set the packlist to be returned.
     try {
-        packListReturn = await getPackItems(weatherReturn.future7days);
+        packListReturn = await getPackItems(weatherReturn.next7days);
     }
     catch (err) {
         console.log('Error at packListReturn', err);
@@ -208,8 +201,17 @@ userController.saveWeatherPacklist = async function (req, res) {
 // *** DELETE '/users/history' - Delete a saved packlist.
 // ------------------------------------------------------
 userController.deletePacklist = async function (req, res) {
-    const loggedInUser = await db.user.findByPk(req.header.authorization);
-
+    try {
+        const loggedInUser = await db.user.findByPk(req.headers.authorization);
+        const recordToDelete = await db.record.findByPk(req.body.recordId);
+        await loggedInUser.removeRecord(recordToDelete);
+        await recordToDelete.destroy();
+        res.send({ message: "Record deleted successfully." });
+    }
+    catch (err) {
+        res.status(400);
+        res.send({ message: "Unable to delete record." })
+    }
 }
 
 
