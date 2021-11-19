@@ -16,21 +16,21 @@ module.exports = {
         {
           name: "T-shirt",
           type: "Partial Top Covering",
-          weatherUse: "warm, hot",
+          weatherUse: "cold, warm, hot",
           createdAt: new Date(),
           updatedAt: new Date()
         },
         {
           name: "Long-Sleeved Shirt",
           type: "Full Top Covering",
-          weatherUse: "frigid, cold",
+          weatherUse: "frigid, cold, warm",
           createdAt: new Date(),
           updatedAt: new Date()
         },
         {
           name: "Sweatshirt",
           type: "Full Top Covering",
-          weatherUse: "frigid, cold",
+          weatherUse: "frigid, cold, warm",
           createdAt: new Date(),
           updatedAt: new Date()
         },
@@ -44,7 +44,28 @@ module.exports = {
         {
           name: "Pants",
           type: "Full-length Leg Covering",
-          weatherUse: "frigid, cold",
+          weatherUse: "frigid, cold, warm",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          name: "Short Skirt",
+          type: "Partial-length Leg Covering",
+          weatherUse: "warm, hot",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          name: "Full-length Skirt",
+          type: "Full-length Leg Covering",
+          weatherUse: "cold, warm",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        },
+        {
+          name: "Jumper",
+          type: "Full-length Body Covering",
+          weatherUse: "cold, warm",
           createdAt: new Date(),
           updatedAt: new Date()
         },
