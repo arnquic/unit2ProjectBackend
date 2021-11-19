@@ -122,10 +122,8 @@ userController.getWeatherPackitems = async function (req, res) {
     let todayWeatherResponse;
     try {
         todayWeatherResponse = await axios.get(`http://api.openweathermap.org/data/2.5/weather?q=${req.body.city},${req.body.country}&units=imperial&appid=89de7727b1752cbeafa3942937797633`);
-        console.log(todayWeatherResponse.data);
     }
     catch (err) {
-        console.log('Error at todayWeatherResponse', err);
         res.send({ message: "Error at todayWeatherResponse", error: err });
     }
 
@@ -145,10 +143,8 @@ userController.getWeatherPackitems = async function (req, res) {
     let historicTempAvg;
     try {
         historicTempAvg = await calculateAvg5DayTemp(cityLonLat.lon, cityLonLat.lat, daysAgo5);
-        console.log('historic avg temp: ' + historicTempAvg);
     }
     catch (err) {
-        console.log('Error at historicTempAvg', err);
         res.send({ message: "Error at historicTempAvg", error: err });
     }
 
@@ -159,10 +155,8 @@ userController.getWeatherPackitems = async function (req, res) {
     let forecastTempAvg;
     try {
         forecastTempAvg = await calculateAvg7DayTemp(cityLonLat.lon, cityLonLat.lat);
-        console.log('forecast avg temp: ' + forecastTempAvg);
     }
     catch (err) {
-        console.log('Error at forecastTempAvg', err);
         res.send({ message: "Error at forecastTempAvg", error: err });
     }
     // Set the weather type to be returned for the future (upcoming 7 days) weather.
@@ -173,7 +167,6 @@ userController.getWeatherPackitems = async function (req, res) {
         packListReturn = await getPackItems(weatherReturn.next7days);
     }
     catch (err) {
-        console.log('Error at packListReturn', err);
         res.send({ message: "Error at packListReturn", error: err });
     }
     // Return the weather and packlist as one object.
@@ -197,7 +190,7 @@ userController.saveWeatherPacklist = async function (req, res) {
         await newRecord.createWeather({
             past5days: req.body.weatherReturn.past5days,
             today: req.body.weatherReturn.today,
-            next7days: req.body.weatherReturn.future7days
+            next7days: req.body.weatherReturn.next7days
         });
         for (let i = 0; i < req.body.packListReturn.length; i++) {
             const packItemToAdd = await db.packItem.findByPk(req.body.packListReturn[i].id);
@@ -251,7 +244,6 @@ async function calculateAvg5DayTemp(longitude, latitude, callDate) {
         daysAvgTemp += hoursAvgTemp / historyWeatherResponse.data.hourly.length;
         callDate += days1;
     }
-    console.log('5 Day Avg function done.');
     return daysAvgTemp / 5;
 }
 
@@ -261,7 +253,6 @@ async function calculateAvg7DayTemp(longitude, latitude) {
     for (let i = 0; i < forecastWeatherResponse.data.daily.length; i++) {
         avgTemp += forecastWeatherResponse.data.daily[i].temp.day;
     }
-    console.log('7 Day Avg function done.');
     return avgTemp / forecastWeatherResponse.data.daily.length;
 }
 
